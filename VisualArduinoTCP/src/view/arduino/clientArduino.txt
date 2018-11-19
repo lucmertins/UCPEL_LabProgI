@@ -1,0 +1,64 @@
+#include <SPI.h>
+#include <Ethernet.h>
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+
+IPAddress dnServer(192, 168, 0, 1);
+IPAddress gateway(192, 168, 0, 1);
+IPAddress subnet(255, 255, 255, 0);
+IPAddress ip(192, 168, 0, 240);
+
+byte server[] = { 192, 168, 0, 250 };
+
+int ledPin8 = 8;
+int ledPin7 = 7;
+int potPin = A0;
+
+int valuePin8 = 0;
+int valuePin7 = 0;
+int potValue = 0;
+
+EthernetClient client;
+
+void setup() {
+  Serial.begin(9600);
+  Ethernet.begin(mac, ip, dnServer, gateway, subnet);
+  Serial.print("IP = ");
+  Serial.println(Ethernet.localIP());
+  pinMode(ledPin8, OUTPUT);
+  pinMode(ledPin7, OUTPUT);
+}
+
+
+void loop() {
+  potValue = analogRead(potPin);
+  while (!client.connected()) {
+    delay(1000);
+    client.connect(server, 8888);
+  }
+  if (client.connected()) {
+    Serial.println(potValue);
+    client.write(potValue);
+    delay(2);
+    int c = client.read();
+    if (c == 1) {
+      Serial.println("Manual Ligar");
+      valuePin7 = 1;
+    } else {
+      Serial.println("Manual Desligar");
+      valuePin7 = 0;
+    }
+    c = client.read();
+    if (c == 1) {
+      Serial.println("Automatico Ligar");
+      valuePin8 = 1;
+    } else {
+      Serial.println("Automatico Desligar");
+      valuePin8 = 0;
+    }
+    client.stop();
+    digitalWrite(ledPin8, valuePin8 == 1 ? HIGH : LOW);
+    digitalWrite(ledPin7, valuePin7 == 1 ? HIGH : LOW);
+  }
+
+
+}
